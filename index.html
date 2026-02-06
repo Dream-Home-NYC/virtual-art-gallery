@@ -11,7 +11,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400&display=swap');
 
         body {
-            background-color: #0a0a0a;
+            background-color: #000;
             color: #e5e5e5;
             font-family: 'Inter', sans-serif;
             overflow: hidden;
@@ -31,17 +31,24 @@
             align-items: center;
             justify-content: center;
             perspective: 1000px;
+            background-color: #000;
+            overflow: hidden;
+            /* Precise padding to ensure no overlap with Header (top) and Controls/Progress (bottom) */
+            padding: 90px 4vw 110px 4vw;
+            box-sizing: border-box;
         }
 
         .artwork-image {
-            max-width: 85vw;
-            max-height: 75vh;
+            /* Maximized size within the padded safe area */
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
             object-fit: contain;
-            box-shadow: 0 30px 60px rgba(0,0,0,0.8);
-            border: 1px solid rgba(255,255,255,0.1);
-            transition: opacity 1.2s ease-in-out, transform 1.2s ease-in-out;
+            box-shadow: 0 0 100px rgba(0, 0, 0, 0.8);
+            transition: opacity 1.8s ease-in-out, transform 1.8s ease-in-out;
             opacity: 0;
-            transform: scale(0.98);
+            transform: scale(1.01);
         }
 
         .artwork-image.active {
@@ -51,15 +58,15 @@
 
         .info-overlay {
             position: absolute;
-            bottom: 5vh;
-            left: 5vw;
-            max-width: 500px;
+            bottom: 0;
+            left: 0;
+            width: 100%;
             z-index: 10;
-            transition: opacity 1s ease-in-out;
-            background: linear-gradient(to top, rgba(10,10,10,0.95), transparent);
-            padding: 20px;
-            border-radius: 12px;
+            transition: opacity 1.2s ease-in-out;
+            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 60%, transparent 100%);
+            padding: 80px 5vw 45px 5vw;
             opacity: 0;
+            pointer-events: none;
         }
 
         .progress-bar-container {
@@ -68,7 +75,8 @@
             left: 0;
             width: 100%;
             height: 4px;
-            background: rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.02);
+            z-index: 40;
         }
 
         #progress-fill {
@@ -79,22 +87,24 @@
         }
 
         .nav-btn {
-            background: rgba(255,255,255,0.05);
-            backdrop-filter: blur(10px);
+            background: rgba(15, 15, 15, 0.7);
+            backdrop-filter: blur(12px);
             border: 1px solid rgba(255,255,255,0.1);
             color: white;
-            padding: 12px;
+            padding: 14px;
             border-radius: 50%;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
         }
 
         .nav-btn:hover {
-            background: rgba(255,255,255,0.2);
-            transform: scale(1.1);
+            background: rgba(212, 175, 55, 0.4);
+            transform: translateY(-2px) scale(1.05);
+            border-color: rgba(212, 175, 55, 0.6);
         }
 
         .vignette {
@@ -103,7 +113,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.6) 100%);
+            background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.85) 100%);
             pointer-events: none;
             z-index: 5;
         }
@@ -111,29 +121,29 @@
         .switch {
             position: relative;
             display: inline-block;
-            width: 50px;
-            height: 24px;
+            width: 44px;
+            height: 22px;
         }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider {
             position: absolute;
             cursor: pointer;
             top: 0; left: 0; right: 0; bottom: 0;
-            background-color: rgba(255,255,255,0.1);
+            background-color: rgba(255,255,255,0.15);
             transition: .4s;
-            border-radius: 24px;
+            border-radius: 22px;
         }
         .slider:before {
             position: absolute;
             content: "";
-            height: 18px; width: 18px;
+            height: 16px; width: 16px;
             left: 3px; bottom: 3px;
             background-color: white;
             transition: .4s;
             border-radius: 50%;
         }
         input:checked + .slider { background-color: #d4af37; }
-        input:checked + .slider:before { transform: translateX(26px); }
+        input:checked + .slider:before { transform: translateX(22px); }
 
         #loading-indicator {
             position: absolute;
@@ -146,13 +156,13 @@
         }
 
         .spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(212, 175, 55, 0.3);
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(212, 175, 55, 0.1);
             border-top: 3px solid #d4af37;
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
+            margin: 0 auto 20px;
         }
 
         @keyframes spin {
@@ -164,14 +174,15 @@
             position: fixed;
             top: 20px;
             right: 20px;
-            background: rgba(153, 27, 27, 0.9);
+            background: rgba(153, 27, 27, 0.95);
             color: white;
-            padding: 12px 20px;
-            border-radius: 8px;
+            padding: 14px 24px;
+            border-radius: 12px;
             z-index: 1000;
-            font-size: 0.8rem;
-            transform: translateY(-100px);
-            transition: transform 0.3s ease;
+            font-size: 0.85rem;
+            transform: translateY(-120px);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
         #error-toast.visible { transform: translateY(0); }
     </style>
@@ -179,34 +190,34 @@
 <body>
 
     <div class="vignette"></div>
-    <div id="error-toast">Fullscreen is restricted by this environment's security policy.</div>
+    <div id="error-toast">Connection issue. Retrying...</div>
 
     <audio id="bg-music" loop>
         <source src="https://upload.wikimedia.org/wikipedia/commons/b/be/Clair_de_lune_%28Claude_Debussy%29_Suite_bergamasque.ogg" type="audio/ogg">
     </audio>
 
-    <header class="fixed top-0 left-0 w-full p-8 flex flex-col md:flex-row justify-between items-start md:items-center z-20 gap-4">
-        <div class="flex items-center gap-4">
-            <div class="w-1 h-8 bg-yellow-600"></div>
+    <header class="fixed top-0 left-0 w-full p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center z-20 gap-4 pointer-events-none">
+        <div class="flex items-center gap-4 pointer-events-auto">
+            <div class="w-1 h-6 bg-yellow-600"></div>
             <div>
-                <h1 class="text-2xl tracking-widest font-light">VIRTUAL GALLERY</h1>
-                <p id="source-status" class="text-[10px] text-yellow-500 uppercase tracking-[0.2em] font-bold">Source: Curated Collection</p>
-                <p id="local-count" class="text-[8px] text-gray-500 uppercase tracking-[0.1em]">Items Loaded: 0</p>
+                <h1 class="text-xl tracking-widest font-light opacity-90">VIRTUAL GALLERY</h1>
+                <p id="source-status" class="text-[9px] text-yellow-500 uppercase tracking-[0.25em] font-bold">Curated Collection</p>
+                <p id="local-count" class="text-[8px] text-gray-500 uppercase tracking-[0.1em]">Archive: 0 items</p>
             </div>
         </div>
         
-        <div class="flex items-center gap-6 bg-black/40 backdrop-blur-md p-3 rounded-full border border-white/10">
-            <div class="flex items-center gap-3 px-2">
-                <span class="text-[10px] uppercase tracking-wider opacity-60">Curated</span>
+        <div class="flex items-center gap-6 bg-black/70 backdrop-blur-xl p-2 px-5 rounded-full border border-white/10 pointer-events-auto shadow-2xl">
+            <div class="flex items-center gap-3 px-1">
+                <span class="text-[9px] uppercase tracking-wider opacity-60">Curated</span>
                 <label class="switch">
                     <input type="checkbox" id="mode-toggle" onchange="toggleMode()">
                     <span class="slider"></span>
                 </label>
-                <span class="text-[10px] uppercase tracking-wider opacity-60">Discovery</span>
+                <span class="text-[9px] uppercase tracking-wider opacity-60">Discovery</span>
             </div>
 
-            <div class="hidden lg:block text-[10px] tracking-widest uppercase opacity-50 border-l border-white/20 pl-6" id="timer-label">
-                Refresh: 5:00
+            <div class="hidden lg:block text-[10px] tracking-widest uppercase opacity-40 border-l border-white/20 pl-6 font-mono" id="timer-label">
+                5:00
             </div>
         </div>
     </header>
@@ -214,32 +225,36 @@
     <main class="art-container" id="gallery">
         <div id="loading-indicator">
             <div class="spinner"></div>
-            <div class="text-yellow-500 animate-pulse uppercase tracking-[0.3em] text-xs" id="loading-text">Opening the Vault...</div>
+            <div class="text-yellow-500 animate-pulse uppercase tracking-[0.4em] text-[10px] font-medium" id="loading-text">Accessing Archive...</div>
         </div>
         <img id="artwork" src="" alt="Famous Artwork" class="artwork-image" referrerpolicy="no-referrer">
         
         <div class="info-overlay" id="info">
-            <h2 class="artwork-title text-4xl mb-2 italic" id="title">Loading...</h2>
-            <p class="text-lg text-gray-400 font-light mb-1" id="artist"></p>
-            <p class="text-sm tracking-widest uppercase opacity-40" id="year"></p>
-            <p id="api-credit" class="text-[10px] mt-4 text-yellow-600/60 uppercase tracking-tighter">Metropolitan Museum Digital Collection</p>
+            <!-- Scaled title down further for better visual hierarchy -->
+            <h2 class="artwork-title text-2xl md:text-3xl mb-2 italic leading-snug text-white font-normal" id="title">Loading...</h2>
+            <div class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                <p class="text-lg text-gray-300 font-light" id="artist"></p>
+                <p class="text-[10px] tracking-[0.25em] uppercase opacity-40 font-semibold" id="year"></p>
+            </div>
+            <p id="api-credit" class="text-[8px] mt-6 text-yellow-600/40 uppercase tracking-[0.2em] font-medium">Digital Heritage Collection</p>
         </div>
     </main>
 
-    <div class="fixed right-8 bottom-8 flex items-center gap-4 z-20">
+    <!-- Navigation Controls -->
+    <div class="fixed right-6 bottom-8 flex items-center gap-3 z-30">
         <button id="audio-btn" class="nav-btn" onclick="toggleAudio()" title="Audio Guide">
-            <svg id="audio-on-icon" class="hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
-            <svg id="audio-off-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
+            <svg id="audio-on-icon" class="hidden" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+            <svg id="audio-off-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
         </button>
 
         <button class="nav-btn" onclick="previousArt()" id="prev-btn" title="Previous">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
         </button>
         <button class="nav-btn" onclick="nextArt()" title="Next">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
         </button>
         <button class="nav-btn" onclick="toggleFullscreen()" title="Fullscreen">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
         </button>
     </div>
 
@@ -248,10 +263,10 @@
     </div>
 
     <script>
-        // Expanded Curated List (Prioritizing high-resolution highlights)
+        // Highly curated stable IDs
         const curatedObjectIds = [
             436532, 11445, 10592, 436535, 437133, 436524, 436533, 336327, 
-            435882, 438815, 435809, 437984, 437980, 436121, 435817,
+            435882, 438815, 435809, 436105, 437984, 437980, 436121, 435817,
             437397, 437396, 437869, 437879, 437881, 435739, 436545, 436504,
             436529, 436531, 436839, 436947, 437056, 437097, 437153, 437175,
             437198, 437202, 437299, 437326, 437329, 437430, 437447, 437455,
@@ -265,7 +280,7 @@
         let currentIndex = 0;
         let isApiMode = false;
         let isLoading = false;
-        let consecutiveErrorCount = 0;
+        let errorCount = 0;
         const ROTATION_TIME = 5 * 60 * 1000; 
         let startTime = Date.now();
         let isAudioPlaying = false;
@@ -282,71 +297,86 @@
         const sourceStatusEl = document.getElementById('source-status');
         const localCountEl = document.getElementById('local-count');
         const bgMusic = document.getElementById('bg-music');
+        const errorToast = document.getElementById('error-toast');
+
+        // Helper for Exponential Backoff on Fetch
+        async function fetchWithRetry(url, options = {}, retries = 5, backoff = 1000) {
+            try {
+                const response = await fetch(url, options);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return await response.json();
+            } catch (err) {
+                if (retries > 0) {
+                    await new Promise(resolve => setTimeout(resolve, backoff));
+                    return fetchWithRetry(url, options, retries - 1, backoff * 2);
+                }
+                throw err;
+            }
+        }
 
         async function initGallery() {
             loadingEl.style.display = 'block';
-            loadingText.innerText = "Curating Masterpieces...";
+            loadingText.innerText = "Curating Gallery...";
             
             try {
-                // Initialize Met Pool
-                const searchRes = await fetch('https://collectionapi.metmuseum.org/public/collection/v1/search?isHighlight=true&hasImages=true&q=painting');
-                const searchData = await searchRes.json();
+                // Initialize Pool
+                const searchData = await fetchWithRetry('https://collectionapi.metmuseum.org/public/collection/v1/search?isHighlight=true&hasImages=true&q=painting');
                 apiObjectIds = searchData.objectIDs || [];
 
-                // Fetch core curated set first
-                const initialBatch = curatedObjectIds.slice(0, 15);
-                await fetchBatch(initialBatch);
+                // Fetch initial batch
+                const initialBatchIds = curatedObjectIds.slice(0, 10);
+                await fetchBatch(initialBatchIds);
                 
-                // Start Gallery with first few loaded
+                // Start UI
                 updateGallery();
                 setInterval(updateProgress, 1000);
 
-                // Background load the rest in batches
-                fetchRemainingCurated();
+                // Background load remaining
+                fetchRemainingData();
             } catch (e) { 
-                console.error("Init Error", e);
-                updateGallery();
+                console.error("Critical Init Error:", e);
+                showToast("Failed to connect to gallery archive.");
+                // Ensure UI is usable even if background fetch fails
+                loadingEl.style.display = 'none';
             }
         }
 
         async function fetchBatch(ids) {
             const promises = ids.map(id => 
-                fetch(`https://collectionapi.metmuseum.org/public/collection/v1/objects/${id}`)
-                    .then(r => r.ok ? r.json() : null)
+                fetchWithRetry(`https://collectionapi.metmuseum.org/public/collection/v1/objects/${id}`)
                     .catch(() => null)
             );
             
             const results = await Promise.all(promises);
             results.forEach(art => {
                 if (art && (art.primaryImage || art.primaryImageSmall)) {
-                    // Prefer primaryImageSmall for better reliability and performance
-                    const url = art.primaryImageSmall || art.primaryImage;
                     localArtworks.push({
                         id: art.objectID,
                         title: art.title || "Untitled",
                         artist: art.artistDisplayName || "Unknown Artist",
                         year: art.objectDate || "N/A",
-                        url: url
+                        url: art.primaryImageSmall || art.primaryImage
                     });
                 }
             });
-            localCountEl.innerText = `Items Loaded: ${localArtworks.length}`;
+            localCountEl.innerText = `Archive: ${localArtworks.length} items`;
         }
 
-        async function fetchRemainingCurated() {
-            const remainingCurated = curatedObjectIds.slice(15);
-            for (let i = 0; i < remainingCurated.length; i += 5) {
-                await fetchBatch(remainingCurated.slice(i, i + 5));
-                await new Promise(r => setTimeout(r, 1000)); // Rate limiting
+        async function fetchRemainingData() {
+            const remaining = curatedObjectIds.slice(10);
+            for (let i = 0; i < remaining.length; i += 5) {
+                await fetchBatch(remaining.slice(i, i + 5));
+                await new Promise(r => setTimeout(r, 1000));
             }
 
+            // Fill up to 500 in background slowly
             while (localArtworks.length < 500 && apiObjectIds.length > 0) {
-                const randomBatch = [];
+                const randomIds = [];
                 for(let j=0; j<10; j++) {
-                    randomBatch.push(apiObjectIds[Math.floor(Math.random() * apiObjectIds.length)]);
+                    randomIds.push(apiObjectIds[Math.floor(Math.random() * apiObjectIds.length)]);
                 }
-                await fetchBatch(randomBatch);
-                await new Promise(r => setTimeout(r, 2000));
+                await fetchBatch(randomIds);
+                await new Promise(r => setTimeout(r, 3000));
             }
         }
 
@@ -359,12 +389,10 @@
             infoEl.style.opacity = '0';
             
             let attempts = 0;
-            while (attempts < 10) {
+            while (attempts < 8) {
                 const randomId = apiObjectIds[Math.floor(Math.random() * apiObjectIds.length)];
                 try {
-                    const res = await fetch(`https://collectionapi.metmuseum.org/public/collection/v1/objects/${randomId}`);
-                    if (!res.ok) throw new Error();
-                    const art = await res.json();
+                    const art = await fetchWithRetry(`https://collectionapi.metmuseum.org/public/collection/v1/objects/${randomId}`, {}, 2);
                     const url = art.primaryImageSmall || art.primaryImage;
                     if (url) {
                         renderArtwork({
@@ -376,10 +404,9 @@
                 attempts++;
             }
             
-            isApiMode = false;
-            document.getElementById('mode-toggle').checked = false;
             isLoading = false;
-            updateGallery();
+            showToast("Discovery Mode experiencing delays.");
+            toggleMode(false);
         }
 
         function renderArtwork(art) {
@@ -388,7 +415,7 @@
             tempImg.src = art.url;
             
             tempImg.onload = () => {
-                consecutiveErrorCount = 0;
+                errorCount = 0;
                 artImg.src = art.url;
                 titleEl.innerText = art.title;
                 artistEl.innerText = art.artist;
@@ -403,21 +430,18 @@
             };
 
             tempImg.onerror = () => {
-                console.warn("Image failed to load:", art.url);
-                consecutiveErrorCount++;
-                
-                if (consecutiveErrorCount > 20) {
-                    loadingText.innerText = "Network issues detected. Try refreshing.";
+                console.warn("Failed to load image asset:", art.url);
+                errorCount++;
+                if (errorCount > 15) {
+                    loadingText.innerText = "Archive currently unavailable.";
                     return;
                 }
                 
-                // If it was a curated item, remove it for this session so we don't loop back to it
                 if (!isApiMode) {
                     localArtworks = localArtworks.filter(item => item.url !== art.url);
-                    localCountEl.innerText = `Items Loaded: ${localArtworks.length}`;
+                    localCountEl.innerText = `Archive: ${localArtworks.length} items`;
                 }
 
-                // Seamlessly try the next one
                 if (isApiMode) fetchDiscoveryArt();
                 else nextArt();
             };
@@ -433,8 +457,11 @@
             }
         }
 
-        function toggleMode() {
-            isApiMode = document.getElementById('mode-toggle').checked;
+        function toggleMode(forcedState) {
+            const toggle = document.getElementById('mode-toggle');
+            if (forcedState !== undefined) toggle.checked = forcedState;
+            
+            isApiMode = toggle.checked;
             sourceStatusEl.innerText = isApiMode ? "Source: Discovery Mode" : "Source: Curated Collection";
             document.getElementById('prev-btn').style.display = isApiMode ? 'none' : 'flex';
             updateGallery();
@@ -460,7 +487,7 @@
             const onIcon = document.getElementById('audio-on-icon');
             const offIcon = document.getElementById('audio-off-icon');
             if (!isAudioPlaying) {
-                bgMusic.play().catch(() => {});
+                bgMusic.play().catch(() => showToast("Click anywhere to enable audio."));
                 onIcon.classList.remove('hidden');
                 offIcon.classList.add('hidden');
             } else {
@@ -480,14 +507,14 @@
             
             const minutes = Math.floor(remaining / 60000);
             const seconds = Math.floor((remaining % 60000) / 1000);
-            timerLabel.innerText = `Refresh: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+            timerLabel.innerText = `${minutes}:${seconds.toString().padStart(2, '0')}`;
             if (elapsed >= ROTATION_TIME) nextArt();
         }
 
-        function showFullscreenError() {
-            const toast = document.getElementById('error-toast');
-            toast.classList.add('visible');
-            setTimeout(() => toast.classList.remove('visible'), 4000);
+        function showToast(msg) {
+            errorToast.innerText = msg;
+            errorToast.classList.add('visible');
+            setTimeout(() => errorToast.classList.remove('visible'), 5000);
         }
 
         async function toggleFullscreen() {
@@ -496,14 +523,13 @@
                     if (document.documentElement.requestFullscreen) {
                         await document.documentElement.requestFullscreen();
                     } else {
-                        showFullscreenError();
+                        showToast("Fullscreen restricted by browser policy.");
                     }
                 } else {
                     if (document.exitFullscreen) await document.exitFullscreen();
                 }
             } catch (err) {
-                console.warn("Fullscreen toggle failed:", err);
-                showFullscreenError();
+                showToast("Fullscreen policy restriction encountered.");
             }
         }
 
