@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Critical: Force no-referrer to allow access to Museum CDNs which block hotlinking -->
+    <meta name="referrer" content="no-referrer">
+    <title>Virtual Art Gallery</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400&display=swap');
+
+        body {
+            background-color: #0a0a0a;
+            color: #e5e5e5;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            margin: 0;
+        }
+
+        h1, .artwork-title {
+            font-family: 'Playfair Display', serif;
+        }
+
+        .art-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            perspective: 1000px;
+        }
+
+        .artwork-image {
+            max-width: 85vw;
+            max-height: 75vh;
+            object-fit: contain;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.8);
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: opacity 1.2s ease-in-out, transform 1.2s ease-in-out;
+            opacity: 0;
+            transform: scale(0.98);
+        }
+
+        .artwork-image.active {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .info-overlay {
+            position: absolute;
+            bottom: 5vh;
+            left: 5vw;
+            max-width: 500px;
+            z-index: 10;
+            transition: opacity 1s ease-in-out;
+            background: linear-gradient(to top, rgba(10,10,10,0.95), transparent);
+            padding: 20px;
+            border-radius: 12px;
+            opacity: 0;
+        }
+
+        .progress-bar-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+        }
+
+        #progress-fill {
+            height: 100%;
+            width: 0%;
+            background: #d4af37;
+            transition: width 1s linear;
+        }
+
+        .nav-btn {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+            padding: 12px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255,255,255,0.2);
+            transform: scale(1.1);
+        }
+
+        .vignette {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.6) 100%);
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(255,255,255,0.1);
+            transition: .4s;
+            border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px; width: 18px;
+            left: 3px; bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: #d4af37; }
+        input:checked + .slider:before { transform: translateX(26px); }
+
+        #loading-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 100;
+            display: none;
+            text-align: center;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(212, 175, 55, 0.3);
+            border-top: 3px solid #d4af37;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Error Message Styles */
+        #error-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(153, 27, 27, 0.9);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            z-index: 1000;
+            font-size: 0.8rem;
+            transform: translateY(-100px);
+            transition: transform 0.3s ease;
+        }
+        #error-toast.visible { transform: translateY(0); }
+    </style>
+</head>
+<body>
+
+    <div class="vignette"></div>
+    <div id="error-toast">Fullscreen is restricted by this environment's security policy.</div>
+
+    <audio id="bg-music" loop>
+        <source src="https://upload.wikimedia.org/wikipedia/commons/b/be/Clair_de_lune_%28Claude_Debussy%29_Suite_bergamasque.ogg" type="audio/ogg">
+    </audio>
+
+    <header class="fixed top-0 left-0 w-full p-8 flex flex-col md:flex-row justify-between items-start md:items-center z-20 gap-4">
+        <div class="flex items-center gap-4">
+            <div class="w-1 h-8 bg-yellow-600"></div>
+            <div>
+                <h1 class="text-2xl tracking-widest font-light">VIRTUAL GALLERY</h1>
+                <p id="source-status" class="text-[10px] text-yellow-500 uppercase tracking-[0.2em] font-bold">Source: Curated Collection</p>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-6 bg-black/40 backdrop-blur-md p-3 rounded-full border border-white/10">
+            <div class="flex items-center gap-3 px-2">
+                <span class="text-[10px] uppercase tracking-wider opacity-60">Curated</span>
+                <label class="switch">
+                    <input type="checkbox" id="mode-toggle" onchange="toggleMode()">
+                    <span class="slider"></span>
+                </label>
+                <span class="text-[10px] uppercase tracking-wider opacity-60">Discovery</span>
+            </div>
+
+            <div class="hidden lg:block text-[10px] tracking-widest uppercase opacity-50 border-l border-white/20 pl-6" id="timer-label">
+                Refresh: 5:00
+            </div>
+        </div>
+    </header>
+
+    <main class="art-container" id="gallery">
+        <div id="loading-indicator">
+            <div class="spinner"></div>
+            <div class="text-yellow-500 animate-pulse uppercase tracking-[0.3em] text-xs" id="loading-text">Opening the Vault...</div>
+        </div>
+        <img id="artwork" src="" alt="Famous Artwork" class="artwork-image" referrerpolicy="no-referrer">
+        
+        <div class="info-overlay" id="info">
+            <h2 class="artwork-title text-4xl mb-2 italic" id="title">Loading...</h2>
+            <p class="text-lg text-gray-400 font-light mb-1" id="artist"></p>
+            <p class="text-sm tracking-widest uppercase opacity-40" id="year"></p>
+            <p id="api-credit" class="text-[10px] mt-4 text-yellow-600/60 uppercase tracking-tighter">Metropolitan Museum Digital Collection</p>
+        </div>
+    </main>
+
+    <div class="fixed right-8 bottom-8 flex items-center gap-4 z-20">
+        <button id="audio-btn" class="nav-btn" onclick="toggleAudio()" title="Audio Guide">
+            <svg id="audio-on-icon" class="hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+            <svg id="audio-off-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
+        </button>
+
+        <button class="nav-btn" onclick="previousArt()" id="prev-btn" title="Previous">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <button class="nav-btn" onclick="nextArt()" title="Next">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <button class="nav-btn" onclick="toggleFullscreen()" title="Fullscreen">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+        </button>
+    </div>
+
+    <div class="progress-bar-container">
+        <div id="progress-fill"></div>
+    </div>
+
+    <script>
+        // Use a set of stable Object IDs from the Met Museum to ensure fresh, high-quality URLs on every load.
+        const curatedObjectIds = [
+            436532, 11445, 10592, 436535, 437133, 436524, 436533, 336327, 
+            435882, 438815, 435809, 436105, 437984, 437980, 436121, 435817
+        ];
+
+        let localArtworks = [];
+        let apiObjectIds = [];
+        let currentIndex = 0;
+        let isApiMode = false;
+        let isLoading = false;
+        let errorCount = 0;
+        const ROTATION_TIME = 5 * 60 * 1000; 
+        let startTime = Date.now();
+        let isAudioPlaying = false;
+
+        const artImg = document.getElementById('artwork');
+        const titleEl = document.getElementById('title');
+        const artistEl = document.getElementById('artist');
+        const yearEl = document.getElementById('year');
+        const infoEl = document.getElementById('info');
+        const progressFill = document.getElementById('progress-fill');
+        const timerLabel = document.getElementById('timer-label');
+        const loadingEl = document.getElementById('loading-indicator');
+        const loadingText = document.getElementById('loading-text');
+        const sourceStatusEl = document.getElementById('source-status');
+        const bgMusic = document.getElementById('bg-music');
+
+        async function initGallery() {
+            loadingEl.style.display = 'block';
+            loadingText.innerText = "Curating Masterpieces...";
+            
+            // 1. Initialize Met Discovery Pool
+            try {
+                const searchRes = await fetch('https://collectionapi.metmuseum.org/public/collection/v1/search?isHighlight=true&hasImages=true&q=painting');
+                const searchData = await searchRes.json();
+                apiObjectIds = searchData.objectIDs || [];
+            } catch (e) { console.error("Met API Search Error", e); }
+
+            // 2. Fetch Curated List Details
+            for (const id of curatedObjectIds) {
+                try {
+                    const res = await fetch(`https://collectionapi.metmuseum.org/public/collection/v1/objects/${id}`);
+                    const art = await res.json();
+                    if (art.primaryImage || art.primaryImageSmall) {
+                        localArtworks.push({
+                            title: art.title || "Untitled",
+                            artist: art.artistDisplayName || "Unknown Artist",
+                            year: art.objectDate || "N/A",
+                            url: art.primaryImage || art.primaryImageSmall
+                        });
+                    }
+                } catch (e) {}
+            }
+
+            // Start Gallery
+            updateGallery();
+            setInterval(updateProgress, 1000);
+        }
+
+        async function fetchDiscoveryArt() {
+            if (isLoading || apiObjectIds.length === 0) return;
+            isLoading = true;
+            loadingEl.style.display = 'block';
+            loadingText.innerText = "Discovering Art...";
+            artImg.classList.remove('active');
+            infoEl.style.opacity = '0';
+            
+            let attempts = 0;
+            while (attempts < 10) {
+                const randomId = apiObjectIds[Math.floor(Math.random() * apiObjectIds.length)];
+                try {
+                    const res = await fetch(`https://collectionapi.metmuseum.org/public/collection/v1/objects/${randomId}`);
+                    const art = await res.json();
+                    const url = art.primaryImage || art.primaryImageSmall;
+                    if (url) {
+                        renderArtwork({
+                            title: art.title || "Untitled", artist: art.artistDisplayName || "Unknown Artist", year: art.objectDate || "N/A", url: url
+                        });
+                        return;
+                    }
+                } catch (e) {}
+                attempts++;
+            }
+            
+            isApiMode = false;
+            document.getElementById('mode-toggle').checked = false;
+            isLoading = false;
+            updateGallery();
+        }
+
+        function renderArtwork(art) {
+            const tempImg = new Image();
+            tempImg.referrerPolicy = "no-referrer";
+            tempImg.src = art.url;
+            
+            tempImg.onload = () => {
+                errorCount = 0;
+                artImg.src = art.url;
+                titleEl.innerText = art.title;
+                artistEl.innerText = art.artist;
+                yearEl.innerText = art.year;
+                
+                loadingEl.style.display = 'none';
+                artImg.classList.add('active');
+                infoEl.style.opacity = '1';
+                
+                isLoading = false;
+                startTime = Date.now();
+            };
+
+            tempImg.onerror = () => {
+                console.error("Image failed to load:", art.url);
+                errorCount++;
+                if (errorCount > 15) {
+                    loadingText.innerText = "Gallery paused due to network issues.";
+                    return;
+                }
+                if (isApiMode) fetchDiscoveryArt();
+                else nextArt();
+            };
+        }
+
+        function updateGallery() {
+            if (isApiMode) fetchDiscoveryArt();
+            else if (localArtworks.length > 0) renderArtwork(localArtworks[currentIndex]);
+        }
+
+        function toggleMode() {
+            isApiMode = document.getElementById('mode-toggle').checked;
+            sourceStatusEl.innerText = isApiMode ? "Source: Discovery Mode" : "Source: Curated Collection";
+            document.getElementById('prev-btn').style.display = isApiMode ? 'none' : 'flex';
+            updateGallery();
+        }
+
+        function nextArt() {
+            if (isLoading) return;
+            if (isApiMode) updateGallery();
+            else {
+                currentIndex = (currentIndex + 1) % localArtworks.length;
+                updateGallery();
+            }
+        }
+
+        function previousArt() {
+            if (isLoading || isApiMode) return;
+            currentIndex = (currentIndex - 1 + localArtworks.length) % localArtworks.length;
+            updateGallery();
+        }
+
+        function toggleAudio() {
+            const onIcon = document.getElementById('audio-on-icon');
+            const offIcon = document.getElementById('audio-off-icon');
+            if (!isAudioPlaying) {
+                bgMusic.play().catch(() => {});
+                onIcon.classList.remove('hidden');
+                offIcon.classList.add('hidden');
+            } else {
+                bgMusic.pause();
+                onIcon.classList.add('hidden');
+                offIcon.classList.remove('hidden');
+            }
+            isAudioPlaying = !isAudioPlaying;
+        }
+
+        function updateProgress() {
+            if (isLoading) return;
+            const elapsed = Date.now() - startTime;
+            const remaining = Math.max(0, ROTATION_TIME - elapsed);
+            const percentage = Math.min((elapsed / ROTATION_TIME) * 100, 100);
+            progressFill.style.width = percentage + '%';
+            
+            const minutes = Math.floor(remaining / 60000);
+            const seconds = Math.floor((remaining % 60000) / 1000);
+            timerLabel.innerText = `Refresh: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+            if (elapsed >= ROTATION_TIME) nextArt();
+        }
+
+        function showFullscreenError() {
+            const toast = document.getElementById('error-toast');
+            toast.classList.add('visible');
+            setTimeout(() => toast.classList.remove('visible'), 4000);
+        }
+
+        async function toggleFullscreen() {
+            try {
+                if (!document.fullscreenElement) {
+                    // Check if requestFullscreen exists
+                    if (document.documentElement.requestFullscreen) {
+                        await document.documentElement.requestFullscreen();
+                    } else {
+                        showFullscreenError();
+                    }
+                } else {
+                    if (document.exitFullscreen) await document.exitFullscreen();
+                }
+            } catch (err) {
+                console.warn("Fullscreen toggle failed:", err);
+                showFullscreenError();
+            }
+        }
+
+        window.onload = initGallery;
+    </script>
+</body>
+</html>
