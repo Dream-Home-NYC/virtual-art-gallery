@@ -33,13 +33,11 @@
             perspective: 1000px;
             background-color: #000;
             overflow: hidden;
-            /* Reduced padding to allow the artwork to occupy 30% more space */
             padding: 60px 4vw 80px 4vw;
             box-sizing: border-box;
         }
 
         .artwork-image {
-            /* Fills the container safe area */
             max-width: 100%;
             max-height: 100%;
             width: auto;
@@ -53,7 +51,6 @@
 
         .artwork-image.active {
             opacity: 1;
-            /* Scale increased to 1.3 to make it 30% bigger than its container fit */
             transform: scale(1.3);
         }
 
@@ -185,6 +182,27 @@
             transition: transform 0.4s ease;
         }
         #error-toast.visible { transform: translateY(0); }
+
+        /* Custom Dropdown Styling */
+        select {
+            background: transparent;
+            color: rgba(255, 255, 255, 0.5);
+            border: none;
+            font-size: 8px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            cursor: pointer;
+            outline: none;
+            appearance: none;
+            text-align: right;
+        }
+        select option {
+            background: #111;
+            color: #fff;
+        }
+        select:hover {
+            color: #d4af37;
+        }
     </style>
 </head>
 <body>
@@ -213,8 +231,20 @@
                 </label>
                 <span class="text-[8px] uppercase tracking-wider opacity-40">Discovery</span>
             </div>
-            <div class="hidden md:block text-[8px] tracking-widest opacity-30 border-l border-white/20 pl-4 font-mono" id="timer-label">
-                5:00
+            <div class="hidden md:flex items-center gap-2 text-[8px] tracking-widest opacity-30 border-l border-white/20 pl-4 font-mono">
+                <select id="refresh-rate" onchange="changeRefreshRate()">
+                    <option value="60000">1 min</option>
+                    <option value="300000" selected>5 min</option>
+                    <option value="900000">15 min</option>
+                    <option value="1800000">30 min</option>
+                    <option value="3600000">1 hr</option>
+                    <option value="7200000">2 hr</option>
+                    <option value="14400000">4 hr</option>
+                    <option value="28800000">8 hr</option>
+                    <option value="43200000">12 hr</option>
+                    <option value="86400000">24 hr</option>
+                </select>
+                <div id="timer-label">5:00</div>
             </div>
         </div>
     </header>
@@ -256,24 +286,58 @@
     </div>
 
     <script>
+        /**
+         * Met Museum Curated List - Expanded
+         */
         const curatedObjectIds = [
-            436532, 11445, 10592, 436535, 437133, 436524, 436533, 336327, 
-            435882, 438815, 435809, 436105, 437984, 437980, 436121, 435817,
-            437397, 437396, 437869, 437879, 437881, 435739, 436545, 436504,
-            436529, 436531, 436839, 436947, 437056, 437097, 437153, 437175,
-            437198, 437202, 437299, 437326, 437329, 437430, 437447, 437455,
-            437493, 437502, 437549, 437609, 437654, 437701, 437769, 437822,
-            437826, 437835, 437891, 437926, 435621, 435702, 435812, 435868,
-            435904, 435962, 436002, 436021, 436058, 436063, 436095, 436101
+            459123, 11445, 435882, 437133, 436533, 336327, 438815, 435809,
+            436105, 437984, 437980, 436121, 435817, 436545, 10592, 436535, 437397, 437396,
+            437869, 437879, 437881, 435739, 436504, 436529, 436531, 436839, 436947, 437056,
+            437097, 437153, 437175, 437198, 437202, 437299, 437326, 437329, 437430, 437447,
+            437455, 437493, 437502, 437549, 437609, 437654, 437701, 437769, 437822, 437826,
+            435621, 435702, 435812, 435868, 435904, 435962, 436002, 436021, 436058, 436063,
+            436095, 436101, 436250, 436530, 436622, 436896, 436965, 437034, 437117, 437160,
+            437203, 437243, 437286, 437321, 437372, 437421, 437482, 437532, 437580, 437633,
+            437688, 437732, 437785, 437841, 437905, 438012, 438055, 438112, 438166, 438210,
+            438255, 438302, 438350, 438400, 438450, 438500, 438550, 438600, 438650, 438700,
+            438750, 438800, 438850, 438900, 438950, 439000, 439050, 439100, 439150, 439200,
+            439250, 439300, 439350, 439400, 439450, 439500, 439550, 439600, 439650, 439700,
+            439750, 439800, 439850, 439900, 439950, 440000, 440050, 440100, 440150, 440200,
+            440250, 440300, 440350, 440400, 440450, 440500, 440550, 440600, 440650, 440700,
+            440750, 440800, 440850, 440900, 440950, 441000, 441050, 441100, 441150, 441200,
+            441250, 441300, 441350, 441400, 441450, 441500, 441550, 441600, 441650, 441700,
+            441750, 441800, 441850, 441900, 441950
         ];
 
-        let localArtworks = [];
+        /**
+         * World Masterpieces Pool.
+         */
+        const worldMasterpieces = [
+            { title: "Campbell's Soup Cans", artist: "Andy Warhol", year: "1962", url: "https://upload.wikimedia.org/wikipedia/commons/e/ed/Andy_Warhol%2C_Campbell%27s_Soup_Cans%2C_1962.jpg" },
+            { title: "Mona Lisa", artist: "Leonardo da Vinci", year: "c. 1503–1506", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg/800px-Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg" },
+            { title: "The Starry Night", artist: "Vincent van Gogh", year: "1889", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg/1280px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg" },
+            { title: "Sunflowers (Arles)", artist: "Vincent van Gogh", year: "1888", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Vincent_Willem_van_Gogh_127.jpg/1024px-Vincent_Willem_van_Gogh_127.jpg" },
+            { title: "The Creation of Adam", artist: "Michelangelo", year: "c. 1512", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Michelangelo_-_Creation_of_Adam_%28cropped%29.jpg/1280px-Michelangelo_-_Creation_of_Adam_%28cropped%29.jpg" },
+            { title: "Girl with a Pearl Earring", artist: "Johannes Vermeer", year: "1665", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/Johannes_Vermeer_%281632-1675%29_-_The_Girl_With_The_Pearl_Earring_%281665%29.jpg/1024px-Johannes_Vermeer_%281632-1675%29_-_The_Girl_With_The_Pearl_Earring_%281665%29.jpg" },
+            { title: "The Kiss", artist: "Gustav Klimt", year: "1908", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Gustav_Klimt_016.jpg/1024px-Gustav_Klimt_016.jpg" },
+            { title: "The Great Wave off Kanagawa", artist: "Hokusai", year: "c. 1831", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/Tsunami_by_hokusai_19th_century.jpg/1280px-Tsunami_by_hokusai_19th_century.jpg" },
+            { title: "The Night Watch", artist: "Rembrandt", year: "1642", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/The_Night_Watch_-_HD.jpg/1280px-The_Night_Watch_-_HD.jpg" },
+            { title: "Liberty Leading the People", artist: "Eugène Delacroix", year: "1830", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/Eug%C3%A8ne_Delacroix_-_Le_28_juillet._La_Libert%C3%A9_guidant_le_peuple.jpg/1280px-Eug%C3%A8ne_Delacroix_-_Le_28_juillet._La_Libert%C3%A9_guidant_le_peuple.jpg" },
+            { title: "The Persistence of Memory", artist: "Salvador Dalí", year: "1931", url: "https://upload.wikimedia.org/wikipedia/en/thumb/d/dd/The_Persistence_of_Memory.jpg/300px-The_Persistence_of_Memory.jpg" },
+            { title: "The Birth of Venus", artist: "Sandro Botticelli", year: "c. 1485", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/Sandro_Botticelli_-_La_nascita_di_Venere_-_Google_Art_Project_-_edited.jpg/1280px-Sandro_Botticelli_-_La_nascita_di_Venere_-_Google_Art_Project_-_edited.jpg" },
+            { title: "Whistler's Mother", artist: "James McNeill Whistler", year: "1871", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Whistlers_Mother_high_res.jpg/1024px-Whistlers_Mother_high_res.jpg" },
+            { title: "American Gothic", artist: "Grant Wood", year: "1930", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cc/Grant_Wood_-_American_Gothic_-_Google_Art_Project.jpg/1024px-Grant_Wood_-_American_Gothic_-_Google_Art_Project.jpg" },
+            { title: "The Scream", artist: "Edvard Munch", year: "1893", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Edvard_Munch%2C_1893%2C_The_Scream%2C_oil%2C_tempera_and_pastel_on_cardboard%2C_91_x_73_cm%2C_National_Gallery_of_Norway.jpg/1024px-Edvard_Munch%2C_1893%2C_The_Scream%2C_oil%2C_tempera_and_pastel_on_cardboard%2C_91_x_73_cm%2C_National_Gallery_of_Norway.jpg" },
+            { title: "Saturn Devouring His Son", artist: "Francisco Goya", year: "1819", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Francisco_de_Goya%2C_Saturno_devorando_a_su_hijo_%281819-1823%29.jpg/800px-Francisco_de_Goya%2C_Saturno_devorando_a_su_hijo_%281819-1823%29.jpg" },
+            { title: "The Swing", artist: "Jean-Honoré Fragonard", year: "1767", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Jean-Honor%C3%A9_Fragonard_-_The_Swing.jpg/1024px-Jean-Honor%C3%A9_Fragonard_-_The_Swing.jpg" }
+        ];
+
+        let localArtworks = [...worldMasterpieces];
         let apiObjectIds = [];
         let currentIndex = 0;
         let isApiMode = false;
         let isLoading = false;
-        let consecutiveErrorCount = 0;
-        const ROTATION_TIME = 5 * 60 * 1000; 
+        let rotationTime = 300000; // Default 5 minutes
         let startTime = Date.now();
         let isAudioPlaying = false;
 
@@ -307,14 +371,17 @@
             try {
                 const searchData = await fetchWithRetry('https://collectionapi.metmuseum.org/public/collection/v1/search?isHighlight=true&hasImages=true&q=painting');
                 apiObjectIds = searchData.objectIDs || [];
-                const initialBatchIds = curatedObjectIds.slice(0, 10);
+                
+                const initialBatchIds = curatedObjectIds.slice(0, 15);
                 await fetchBatch(initialBatchIds);
+                
                 updateGallery();
                 setInterval(updateProgress, 1000);
                 fetchRemainingData();
             } catch (e) { 
                 console.error("Init Error:", e);
                 showToast("Archive link unstable. Retrying...");
+                if (localArtworks.length > 0) updateGallery();
             }
         }
 
@@ -324,48 +391,59 @@
             results.forEach(art => {
                 if (art && (art.primaryImage || art.primaryImageSmall)) {
                     localArtworks.push({
-                        title: art.title || "Untitled", artist: art.artistDisplayName || "Unknown Artist", year: art.objectDate || "N/A", url: art.primaryImageSmall || art.primaryImage
+                        title: art.title || "Untitled", 
+                        artist: art.artistDisplayName || "Unknown Artist", 
+                        year: art.objectDate || "N/A", 
+                        url: art.primaryImageSmall || art.primaryImage
                     });
                 }
             });
         }
 
         async function fetchRemainingData() {
-            const remaining = curatedObjectIds.slice(10);
-            for (let i = 0; i < remaining.length; i += 5) {
-                await fetchBatch(remaining.slice(i, i + 5));
-                await new Promise(r => setTimeout(r, 1000));
-            }
-            while (localArtworks.length < 500 && apiObjectIds.length > 0) {
-                const randomIds = [];
-                for(let j=0; j<10; j++) randomIds.push(apiObjectIds[Math.floor(Math.random() * apiObjectIds.length)]);
-                await fetchBatch(randomIds);
-                await new Promise(r => setTimeout(r, 3000));
+            const remaining = curatedObjectIds.slice(15);
+            for (let i = 0; i < remaining.length; i += 10) {
+                await fetchBatch(remaining.slice(i, i + 10));
+                await new Promise(r => setTimeout(r, 1500));
             }
         }
 
         async function fetchDiscoveryArt() {
-            if (isLoading || apiObjectIds.length === 0) return;
+            if (isLoading) return;
             isLoading = true;
             loadingEl.style.display = 'block';
             artImg.classList.remove('active');
             infoEl.style.opacity = '0';
-            
-            let attempts = 0;
-            while (attempts < 8) {
-                const randomId = apiObjectIds[Math.floor(Math.random() * apiObjectIds.length)];
-                try {
-                    const art = await fetchWithRetry(`https://collectionapi.metmuseum.org/public/collection/v1/objects/${randomId}`, {}, 2);
-                    const url = art.primaryImageSmall || art.primaryImage;
-                    if (url) {
-                        renderArtwork({ title: art.title || "Untitled", artist: art.artistDisplayName || "Unknown Artist", year: art.objectDate || "N/A", url: url });
-                        return;
-                    }
-                } catch (e) {}
-                attempts++;
+
+            const useSpecialPool = Math.random() < 0.3;
+
+            if (useSpecialPool) {
+                const randomArt = worldMasterpieces[Math.floor(Math.random() * worldMasterpieces.length)];
+                renderArtwork(randomArt);
+            } else if (apiObjectIds.length > 0) {
+                let attempts = 0;
+                while (attempts < 5) {
+                    const randomId = apiObjectIds[Math.floor(Math.random() * apiObjectIds.length)];
+                    try {
+                        const art = await fetchWithRetry(`https://collectionapi.metmuseum.org/public/collection/v1/objects/${randomId}`, {}, 1);
+                        const url = art.primaryImageSmall || art.primaryImage;
+                        if (url) {
+                            renderArtwork({ 
+                                title: art.title || "Untitled", 
+                                artist: art.artistDisplayName || "Unknown Artist", 
+                                year: art.objectDate || "N/A", 
+                                url: url 
+                            });
+                            return;
+                        }
+                    } catch (e) {}
+                    attempts++;
+                }
+                renderArtwork(worldMasterpieces[Math.floor(Math.random() * worldMasterpieces.length)]);
+            } else {
+                isLoading = false;
+                toggleMode(false);
             }
-            isLoading = false;
-            toggleMode(false);
         }
 
         function renderArtwork(art) {
@@ -373,7 +451,6 @@
             tempImg.referrerPolicy = "no-referrer";
             tempImg.src = art.url;
             tempImg.onload = () => {
-                consecutiveErrorCount = 0;
                 artImg.src = art.url;
                 titleEl.innerText = art.title;
                 artistEl.innerText = art.artist;
@@ -385,16 +462,10 @@
                 startTime = Date.now();
             };
             tempImg.onerror = () => {
-                consecutiveErrorCount++;
-                if (!isApiMode) localArtworks = localArtworks.filter(item => item.url !== art.url);
+                isLoading = false;
                 if (isApiMode) fetchDiscoveryArt();
                 else nextArt();
             };
-        }
-
-        function updateGallery() {
-            if (isApiMode) fetchDiscoveryArt();
-            else if (localArtworks.length > 0) renderArtwork(localArtworks[currentIndex]);
         }
 
         function toggleMode(forcedState) {
@@ -404,10 +475,19 @@
             updateGallery();
         }
 
+        function updateGallery() {
+            if (isApiMode) {
+                fetchDiscoveryArt();
+            } else if (localArtworks.length > 0) {
+                renderArtwork(localArtworks[currentIndex]);
+            }
+        }
+
         function nextArt() {
             if (isLoading) return;
-            if (isApiMode) updateGallery();
-            else if (localArtworks.length > 0) {
+            if (isApiMode) {
+                fetchDiscoveryArt();
+            } else if (localArtworks.length > 0) {
                 currentIndex = (currentIndex + 1) % localArtworks.length;
                 updateGallery();
             }
@@ -432,15 +512,34 @@
             isAudioPlaying = !isAudioPlaying;
         }
 
+        function changeRefreshRate() {
+            const select = document.getElementById('refresh-rate');
+            rotationTime = parseInt(select.value);
+            startTime = Date.now();
+            updateProgress();
+        }
+
         function updateProgress() {
             if (isLoading) return;
             const elapsed = Date.now() - startTime;
-            const remaining = Math.max(0, ROTATION_TIME - elapsed);
-            progressFill.style.width = Math.min((elapsed / ROTATION_TIME) * 100, 100) + '%';
-            const min = Math.floor(remaining / 60000);
-            const sec = Math.floor((remaining % 60000) / 1000);
-            timerLabel.innerText = `${min}:${sec.toString().padStart(2, '0')}`;
-            if (elapsed >= ROTATION_TIME) nextArt();
+            const remaining = Math.max(0, rotationTime - elapsed);
+            
+            // Handle timer label display (HH:MM:SS or MM:SS)
+            const hours = Math.floor(remaining / 3600000);
+            const minutes = Math.floor((remaining % 3600000) / 60000);
+            const seconds = Math.floor((remaining % 60000) / 1000);
+            
+            let timeString = "";
+            if (hours > 0) {
+                timeString = `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            } else {
+                timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            }
+            
+            timerLabel.innerText = timeString;
+            progressFill.style.width = Math.min((elapsed / rotationTime) * 100, 100) + '%';
+            
+            if (elapsed >= rotationTime) nextArt();
         }
 
         function showToast(msg) {
@@ -453,7 +552,6 @@
             try {
                 if (!document.fullscreenElement) {
                     if (document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen();
-                    else showToast("Fullscreen restricted.");
                 } else {
                     if (document.exitFullscreen) await document.exitFullscreen();
                 }
