@@ -160,7 +160,6 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* Error Message Styles */
         #error-toast {
             position: fixed;
             top: 20px;
@@ -192,6 +191,7 @@
             <div>
                 <h1 class="text-2xl tracking-widest font-light">VIRTUAL GALLERY</h1>
                 <p id="source-status" class="text-[10px] text-yellow-500 uppercase tracking-[0.2em] font-bold">Source: Curated Collection</p>
+                <p id="local-count" class="text-[8px] text-gray-500 uppercase tracking-[0.1em]">Items Loaded: 0</p>
             </div>
         </div>
         
@@ -248,10 +248,16 @@
     </div>
 
     <script>
-        // Use a set of stable Object IDs from the Met Museum to ensure fresh, high-quality URLs on every load.
+        // Expanded Curated List (Prioritizing high-resolution highlights)
         const curatedObjectIds = [
             436532, 11445, 10592, 436535, 437133, 436524, 436533, 336327, 
-            435882, 438815, 435809, 436105, 437984, 437980, 436121, 435817
+            435882, 438815, 435809, 437984, 437980, 436121, 435817,
+            437397, 437396, 437869, 437879, 437881, 435739, 436545, 436504,
+            436529, 436531, 436839, 436947, 437056, 437097, 437153, 437175,
+            437198, 437202, 437299, 437326, 437329, 437430, 437447, 437455,
+            437493, 437502, 437549, 437609, 437654, 437701, 437769, 437822,
+            437826, 437835, 437891, 437926, 435621, 435702, 435812, 435868,
+            435904, 435962, 436002, 436021, 436058, 436063, 436095, 436101
         ];
 
         let localArtworks = [];
@@ -259,7 +265,7 @@
         let currentIndex = 0;
         let isApiMode = false;
         let isLoading = false;
-        let errorCount = 0;
+        let consecutiveErrorCount = 0;
         const ROTATION_TIME = 5 * 60 * 1000; 
         let startTime = Date.now();
         let isAudioPlaying = false;
@@ -274,38 +280,74 @@
         const loadingEl = document.getElementById('loading-indicator');
         const loadingText = document.getElementById('loading-text');
         const sourceStatusEl = document.getElementById('source-status');
+        const localCountEl = document.getElementById('local-count');
         const bgMusic = document.getElementById('bg-music');
 
         async function initGallery() {
             loadingEl.style.display = 'block';
             loadingText.innerText = "Curating Masterpieces...";
             
-            // 1. Initialize Met Discovery Pool
             try {
+                // Initialize Met Pool
                 const searchRes = await fetch('https://collectionapi.metmuseum.org/public/collection/v1/search?isHighlight=true&hasImages=true&q=painting');
                 const searchData = await searchRes.json();
                 apiObjectIds = searchData.objectIDs || [];
-            } catch (e) { console.error("Met API Search Error", e); }
 
-            // 2. Fetch Curated List Details
-            for (const id of curatedObjectIds) {
-                try {
-                    const res = await fetch(`https://collectionapi.metmuseum.org/public/collection/v1/objects/${id}`);
-                    const art = await res.json();
-                    if (art.primaryImage || art.primaryImageSmall) {
-                        localArtworks.push({
-                            title: art.title || "Untitled",
-                            artist: art.artistDisplayName || "Unknown Artist",
-                            year: art.objectDate || "N/A",
-                            url: art.primaryImage || art.primaryImageSmall
-                        });
-                    }
-                } catch (e) {}
+                // Fetch core curated set first
+                const initialBatch = curatedObjectIds.slice(0, 15);
+                await fetchBatch(initialBatch);
+                
+                // Start Gallery with first few loaded
+                updateGallery();
+                setInterval(updateProgress, 1000);
+
+                // Background load the rest in batches
+                fetchRemainingCurated();
+            } catch (e) { 
+                console.error("Init Error", e);
+                updateGallery();
+            }
+        }
+
+        async function fetchBatch(ids) {
+            const promises = ids.map(id => 
+                fetch(`https://collectionapi.metmuseum.org/public/collection/v1/objects/${id}`)
+                    .then(r => r.ok ? r.json() : null)
+                    .catch(() => null)
+            );
+            
+            const results = await Promise.all(promises);
+            results.forEach(art => {
+                if (art && (art.primaryImage || art.primaryImageSmall)) {
+                    // Prefer primaryImageSmall for better reliability and performance
+                    const url = art.primaryImageSmall || art.primaryImage;
+                    localArtworks.push({
+                        id: art.objectID,
+                        title: art.title || "Untitled",
+                        artist: art.artistDisplayName || "Unknown Artist",
+                        year: art.objectDate || "N/A",
+                        url: url
+                    });
+                }
+            });
+            localCountEl.innerText = `Items Loaded: ${localArtworks.length}`;
+        }
+
+        async function fetchRemainingCurated() {
+            const remainingCurated = curatedObjectIds.slice(15);
+            for (let i = 0; i < remainingCurated.length; i += 5) {
+                await fetchBatch(remainingCurated.slice(i, i + 5));
+                await new Promise(r => setTimeout(r, 1000)); // Rate limiting
             }
 
-            // Start Gallery
-            updateGallery();
-            setInterval(updateProgress, 1000);
+            while (localArtworks.length < 500 && apiObjectIds.length > 0) {
+                const randomBatch = [];
+                for(let j=0; j<10; j++) {
+                    randomBatch.push(apiObjectIds[Math.floor(Math.random() * apiObjectIds.length)]);
+                }
+                await fetchBatch(randomBatch);
+                await new Promise(r => setTimeout(r, 2000));
+            }
         }
 
         async function fetchDiscoveryArt() {
@@ -321,8 +363,9 @@
                 const randomId = apiObjectIds[Math.floor(Math.random() * apiObjectIds.length)];
                 try {
                     const res = await fetch(`https://collectionapi.metmuseum.org/public/collection/v1/objects/${randomId}`);
+                    if (!res.ok) throw new Error();
                     const art = await res.json();
-                    const url = art.primaryImage || art.primaryImageSmall;
+                    const url = art.primaryImageSmall || art.primaryImage;
                     if (url) {
                         renderArtwork({
                             title: art.title || "Untitled", artist: art.artistDisplayName || "Unknown Artist", year: art.objectDate || "N/A", url: url
@@ -345,7 +388,7 @@
             tempImg.src = art.url;
             
             tempImg.onload = () => {
-                errorCount = 0;
+                consecutiveErrorCount = 0;
                 artImg.src = art.url;
                 titleEl.innerText = art.title;
                 artistEl.innerText = art.artist;
@@ -360,20 +403,34 @@
             };
 
             tempImg.onerror = () => {
-                console.error("Image failed to load:", art.url);
-                errorCount++;
-                if (errorCount > 15) {
-                    loadingText.innerText = "Gallery paused due to network issues.";
+                console.warn("Image failed to load:", art.url);
+                consecutiveErrorCount++;
+                
+                if (consecutiveErrorCount > 20) {
+                    loadingText.innerText = "Network issues detected. Try refreshing.";
                     return;
                 }
+                
+                // If it was a curated item, remove it for this session so we don't loop back to it
+                if (!isApiMode) {
+                    localArtworks = localArtworks.filter(item => item.url !== art.url);
+                    localCountEl.innerText = `Items Loaded: ${localArtworks.length}`;
+                }
+
+                // Seamlessly try the next one
                 if (isApiMode) fetchDiscoveryArt();
                 else nextArt();
             };
         }
 
         function updateGallery() {
-            if (isApiMode) fetchDiscoveryArt();
-            else if (localArtworks.length > 0) renderArtwork(localArtworks[currentIndex]);
+            if (isApiMode) {
+                fetchDiscoveryArt();
+            } else {
+                if (localArtworks.length > 0) {
+                    renderArtwork(localArtworks[currentIndex]);
+                }
+            }
         }
 
         function toggleMode() {
@@ -385,15 +442,16 @@
 
         function nextArt() {
             if (isLoading) return;
-            if (isApiMode) updateGallery();
-            else {
+            if (isApiMode) {
+                updateGallery();
+            } else if (localArtworks.length > 0) {
                 currentIndex = (currentIndex + 1) % localArtworks.length;
                 updateGallery();
             }
         }
 
         function previousArt() {
-            if (isLoading || isApiMode) return;
+            if (isLoading || isApiMode || localArtworks.length === 0) return;
             currentIndex = (currentIndex - 1 + localArtworks.length) % localArtworks.length;
             updateGallery();
         }
@@ -435,7 +493,6 @@
         async function toggleFullscreen() {
             try {
                 if (!document.fullscreenElement) {
-                    // Check if requestFullscreen exists
                     if (document.documentElement.requestFullscreen) {
                         await document.documentElement.requestFullscreen();
                     } else {
